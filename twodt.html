@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.0/css/bootstrap.min.css" integrity="sha384-SI27wrMjH3ZZ89r4o+fGIJtnzkAnFs3E4qz9DIYioCQ5l9Rd/7UAa8DHcaL8jkWt" crossorigin="anonymous">
+    <title>公文翻譯機</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+            color: #555;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1.1em;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 1.2em;
+            background-color: #e7f5e6;
+            border: 1px solid #d1e7d0;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            color: #2e7d32;
+        }
+        
+        button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        #footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+        }
+        
+        #footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        
+        #footer a:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>公文翻譯機</h1>
+        <div class="row">
+            <textarea id="in" class="form-control" name="origin" rows="10" placeholder="請輸入欲轉換之文字...">係於知悉請求之原因後 30 日之不變期間內為之，並無違背上開規定，應屬合法，合先敘明。</textarea>
+        </div>
+        <hr>
+        <div class="row">
+            <pre id="output"></pre>
+        </div>
+    </div>
+    <footer>
+        2024 | <a href="https://github.com/JackKuo-tw/tools.jackkuo.org">GitHub Repo</a> | jackkuo@jackkuo.org
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.0/js/bootstrap.min.js" integrity="sha384-3qaqj0lc6sV/qpzrc1N5DC6i1VRn/HyX4qdPaiEFbn54VjQBEU341pvjz7Dv3n6P" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        setInterval(detect, 500);
+        const conv_table = {
+            "俾": "以便",
+            "甫": "剛剛",
+            "復": "答覆、再次",
+            "迭": "經常",
+            "得": "可有可無",
+            "殆": "幾乎、恐怕",
+            "亟": "急切",
+            "遽": "突然、立即",
+            "逕": "直接",
+            "迄": "到、至今",
+            "頃": "不久、剛剛",
+            "悉": "知曉、全部",
+            "咸": "皆、都",
+            "旋": "隨即、頃刻",
+            "臻": "達到",
+            "殊": "極其、非常",
+            "滋": "發生、生出",
+            "嗣": "往後、從此",
+            "俟": "等到",
+            "抑": "或",
+            "尤": "更加",
+            "爰": "於是",
+            "係": "是",
+            "蓋": "大概",
+            "裨益": "有所利益、幫助、補益",
+            "短絀": "經費不足",
+            "略以": "大概是",
+            "臚列": "逐一陳列、逐一表列",
+            "賡續": "持續不斷",
+            "更迭": "經常變動",
+            "剋日": "立即、馬上",
+            "或謂": "另一說法",
+            "惠允": "懇求同意",
+            "函囑": "來函吩咐",
+            "拮据": "經費很不足",
+            "前揭": "前面（或上面）所提過",
+            "上揭": "前面（或上面）所提過",
+            "闕漏": "欠缺",
+            "闕如": "欠缺",
+            "盱衡": "檢視情況",
+            "卓見": "高明的見解",
+            "旨揭": "主旨所提過",
+            "贅述": "冗長的說明",
+            "轉圜": "挽救",
+            "縝密": "周詳細密",
+            "庶幾": "幾乎",
+            "熟稔": "澈底明瞭",
+            "甚鉅": "非常重大",
+            "挹注": "注入",
+            "囿於": "受限於",
+            "誤植": "繕入錯字",
+            "毋庸": "不用、不必",
+            "無訛": "沒有錯誤",
+            "罔顧": "不予理會",
+            "邇來": "最近、近來",
+            "合先敘明": "概括的先以說明",
+            "未敢擅專": "不敢擅自定奪",
+            "應毋庸議": "不必再討論",
+            "併予澄明": "同時澄清說明",
+            "昭然若揭": "事情真相已大白",
+            "諒蒙鈞察": "上級機關大概已經收悉",
+            "礙難照辦": "抱歉無法遵照辦理",
+            "歉難照辦": "抱歉無法遵照辦理",
+            "窒礙難行": "困難重重，無法執行",
+            "刻不容緩": "不容許拖延",
+            "究其原因": "考量其原由",
+            "綜上所述": "總結上所言",
+            "莫衷一是": "無法決斷",
+            "莫此為甚": "以此最嚴重",
+            "彰明較著": "非常明確",
+            "惠示卓見": "給予高見",
+            "俾憑辦理": "辦理依據 ",
+            "為資周妥": "為求得周詳妥善",
+            "本於權責": "本於應有的職權與責任",
+            "本於職權": "本於應有的職權與責任",
+            "自行核處": "自行決定及處理",
+            "尚無不同": "完全相同",
+            "前案可稽": "以前面的案例作為憑據",
+            "兩案併陳": "兩個方案文案一同陳閱",
+            "簽稿併陳 ": "將簽與函稿同時陳閱",
+            "竣事": "完工",
+            "不無": "有",
+            "情事": "事件",
+            "尚祈鑒察": "請上級機關審察",
+            "倘不果": "如果未能實現",
+            "權衡": "權衡考量",
+            "酌情處理": "依情況處理",
+            "餘憾": "深感遺憾",
+            "核可": "批准",
+            "倘蒙": "如果能夠",
+            "核實": "確認屬實",
+            "當即": "立即",
+            "統籌": "全面規劃",
+            "秉持": "保持",
+            "並無不妥": "沒有問題",
+            "悉請鑒核": "請全面審核",
+            "撙節": "節省",
+            "鈞核": "審核",
+            "迺": "乃、於是",
+            "卽": "即、就是",
+            "擬具": "擬訂",
+            "著手": "開始處理",
+            "轉致": "轉交",
+            "宜予": "應給予",
+            "倘蒙允准": "如果能夠批准",
+            "鈞鑒": "審閱",
+            "緩不濟急": "延誤無法解決緊急問題",
+            "惠請示覆": "請來函指示並答覆",
+            "核覆": "審核並答覆",
+            "綜合研處": "綜合考量並處理",
+            "併酌參辦": "一併考慮處理",
+            "迭經": "多次經過",
+            "特此函覆": "特別來函答覆",
+            "併陳核議": "一併呈交審核討論",
+            "申復": "再次提出意見或反駁",
+            "爰請核示": "因此請求審核指示",
+            "未克從命": "無法遵從命令",
+            "遵照辦理": "按指示辦理",
+            "無庸贅述": "不需多加說明",
+            "權責相符": "與職責相符合",
+            "勘誤": "修正錯誤",
+            "依規核處": "按規定審核處理",
+            "前案備查": "前述案例可供參考",
+            "通案處理": "全面性處理",
+            "由此觀之": "從這點來看",
+            "未及施行": "尚未進行",
+            "亟待處理": "急需處理",
+            "如蒙核准": "如果能夠批准",
+            "通盤考量": "全面考慮",
+            "准予施行": "批准執行",
+            "明確指示": "清楚的指導",
+            "恕難從命": "抱歉無法遵從指示",
+            "敬請鑒核": "請審核",
+            "敬請核示": "請指示",
+            "諒予見諒": "請諒解",
+            "殊感欣慰": "非常感到欣慰",
+            "本於事實": "根據事實",
+            "依情核處": "根據情況處理",
+            "務期周延": "必須確保周全",
+            "惠予批准": "請求批准",
+            "尚無異議": "沒有不同意見",
+            "謹請示覆": "請指示並回覆",
+            "謹請鑒核": "請審閱核實",
+            "不便置喙": "不便發表意見",
+            "未悉全貌": "不完全了解",
+            "已蒙准許": "已經獲得批准",
+            "擬請辦理": "計劃請求處理",
+            "請予照辦": "請按此辦理",
+            "職此奉覆": "謹此回覆",
+            "按規照辦": "按照規定辦理",
+            "無庸置疑": "毋庸置疑",
+            "依此辦理": "按照這個辦理",
+            "不日可期": "不久可以期待",
+            "悉從尊命": "完全遵從指示",
+            "專此函達": "特別來函告知",
+            "毋庸贅言": "不需多言",
+            "毋庸置辯": "無需辯解",
+            "經核無訛": "審核後無誤",
+            "奉悉": "已經收到並知悉",
+            "無甚異議": "沒有重大異議",
+            "容後再敘": "稍後再進一步詳述",
+            "謹奉查照": "請根據此函查明並參考",
+            "即予准行": "立即批准執行",
+            "概不從優": "一律不予從寬處理",
+            "請予備查": "請留作備查",
+            "詳如所述": "如前所述詳細內容",
+            "未及詳核": "尚未詳細審核",
+            "有待核示": "等待審核指示",
+            "限期辦理": "限時處理",
+            "尚無定論": "還沒有明確結論",
+            "擬予准駁": "計劃批准或駁回",
+            "謹此陳述": "特此陳述",
+            "務必遵循": "必須遵從",
+            "恐難如願": "恐怕無法達成",
+            "已悉數辦妥": "已經全部處理妥當",
+            "未敢怠慢": "不敢怠慢",
+            "容有未盡": "可能還有未盡之處",
+            "尚俟查明": "還需要進一步查明",
+            "務期達成": "務必要達成",
+            "稍後奉覆": "稍後再回覆",
+            "敬請示復": "請求指示並回覆",
+            "亟需核辦": "急需審核處理",
+            "尚俟核准": "尚待批准",
+            "請俟示覆": "請等待回覆指示",
+            "盼即核准": "希望立即批准",
+            "毋須詳述": "無需詳細說明",
+            "即予陳報": "立即呈報",
+            "詳核無誤": "詳細審核後無誤",
+            "靜候賜復": "等待回覆",
+            "待予勘核": "等待審查核實",
+            "請即照准": "請立即照准",
+            "俟復": "等待回覆",
+            "俟後查辦": "等待後續查辦",
+            "諒達成": "預計完成",
+            "無須勞神": "無需費心",
+            "即予撥冗": "立即抽空處理",
+            "務請詳悉": "務必詳細了解",
+            "容後陳述": "稍後再詳述",
+            "擬請撥冗": "計劃請求抽空處理",
+            "稍俟奉示": "稍等回覆指示",
+            "未便詳覆": "不方便詳細回覆",
+            "恕難詳敘": "抱歉無法詳細說明",
+            "專此奉達": "特別來函告知"
+        };
+
+        var last_input = "";
+
+        function detect() {
+            let input = document.getElementById("in").value;
+            if (input === last_input) {
+                return;
+            }
+            last_input = input;
+            for (const [key, value] of Object.entries(conv_table)) {
+                input = input.replaceAll(key, key + "<b style='background-color: #bbe9fa'>（" + value + "）</b>");
+            }
+
+            document.getElementById("output").innerHTML = input;
+        }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5DLL9WK23K"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'G-5DLL9WK23K');
+    </script>
+</body>
+
+</html>
