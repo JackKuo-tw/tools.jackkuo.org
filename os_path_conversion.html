@@ -14,12 +14,12 @@
             color: #333;
             padding: 20px;
         }
-        
+
         h1 {
             text-align: center;
             color: #4CAF50;
         }
-        
+
         .container {
             max-width: 700px;
             margin: 30px auto;
@@ -28,14 +28,14 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         label {
             font-weight: bold;
             display: block;
             margin: 10px 0 5px;
             color: #555;
         }
-        
+
         input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -43,7 +43,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        
+
         button {
             width: 100%;
             background-color: #4CAF50;
@@ -55,11 +55,11 @@
             font-size: 16px;
             margin-bottom: 20px;
         }
-        
+
         button:hover {
             background-color: #45a049;
         }
-        
+
         .result {
             background-color: #e7f5e6;
             border: 1px solid #d1e7d0;
@@ -70,11 +70,12 @@
             color: #2e7d32;
             white-space: pre-wrap;
         }
-        
+
         .result p {
             margin: 0;
+            cursor: pointer;
         }
-        
+
         footer {
             text-align: center;
             padding: 20px;
@@ -95,81 +96,65 @@
         <button onclick="convertPath()">Convert Path</button>
 
         <div class="result" id="backSlashResult">
-            <p><strong> <span id="winBackslash">N/A</span></strong> (Windows Backslash)</p>
-            <p><strong> <span id="winSlash">N/A</span></strong> (Windows Slash)</p>
-            <p><strong> <span id="winDoubleBackslash">N/A</span></strong> (Windows Double Backslash)</p>
-            <p><strong> <span id="singleBackSlash">N/A</span></strong> (Backslash)</p>
-            <p><strong> <span id="doubleBackSlash">N/A</span></strong> (Double Backslash)</p>
-            <p><strong> <span id="slashResult">N/A</span></strong> (Slash)</p>
-            <p><strong> <span id="smbResult">N/A</span></strong> (SMB Path)</p>
+            <p onclick="copyToClipboard('winBackslash')"><strong> <span id="winBackslash">N/A</span></strong> (Windows Backslash)</p>
+            <p onclick="copyToClipboard('winSlash')"><strong> <span id="winSlash">N/A</span></strong> (Windows Slash)</p>
+            <p onclick="copyToClipboard('winDoubleBackslash')"><strong> <span id="winDoubleBackslash">N/A</span></strong> (Windows Double Backslash)</p>
+            <p onclick="copyToClipboard('slashResult')"><strong> <span id="slashResult">N/A</span></strong> (Slash)</p>
+            <p onclick="copyToClipboard('smbResult')"><strong> <span id="smbResult">N/A</span></strong> (SMB Path)</p>
         </div>
     </div>
 
     <script>
-        function convertPath() {
-            const pathInput = document.getElementById("pathInput").value;
-
-            // Rule for drive letter conversion
-            let convertedInput = pathInput;
-
-            // Convert /c/ or /d/ (one letter followed by a slash) to C:/ or D:/
+        function forceWindowsDrive(pathInput) {
             const drivePattern = /^\/([a-zA-Z])\//;
             if (drivePattern.test(pathInput)) {
-                convertedInput = pathInput.replace(drivePattern, (match, letter) => `${letter.toUpperCase()}:\\`);
+                pathInput = pathInput.replace(drivePattern, (match, letter) => `${letter.toUpperCase()}:\\`);
             }
+            return pathInput;
+        }
 
-            // Convert C:/ or D:/ to /c/ or /d/
-            const backToDrivePattern = /^([A-Z]):\\/;
+        function forceUnixDrive(pathInput) {
+            const backToDrivePattern = /^([a-zA-Z]):\\/;
+            const slashToDrivePattern = /^([a-zA-Z]):\//;
             if (backToDrivePattern.test(pathInput)) {
-                convertedInput = pathInput.replace(backToDrivePattern, (match, letter) => `/${letter.toLowerCase()}/`);
+                pathInput = pathInput.replace(backToDrivePattern, (match, letter) => `/${letter.toLowerCase()}/`);
             }
-
-            // Convert slashes to backslashes or double backslashes and vice versa
-            let singleBackSlash = '';
-            let doubleBackSlash = '';
-            let slashResult = '';
-            let smbResult = '';
-
-            if (convertedInput.includes('/')) {
-                // If the path contains slashes (/), convert to backslashes
-                singleBackSlash = convertedInput.replace(/\//g, '\\');
-                doubleBackSlash = convertedInput.replace(/\//g, '\\\\');
-                slashResult = convertedInput; // No conversion needed, just return as-is
-            } else if (convertedInput.includes('\\')) {
-                // If the path contains backslashes, convert to slashes
-                slashResult = convertedInput.replace(/\\/g, '/');
-                singleBackSlash = convertedInput; // No conversion needed, just return as-is
-                doubleBackSlash = convertedInput.replace(/\\/g, '\\\\');
-            } else {
-                // If no slashes or backslashes, output as-is
-                singleBackSlash = convertedInput;
-                doubleBackSlash = convertedInput;
-                slashResult = convertedInput;
+            else if (slashToDrivePattern.test(pathInput)) {
+                pathInput = pathInput.replace(slashToDrivePattern, (match, letter) => `/${letter.toLowerCase()}/`);
             }
+            return pathInput;
+        }
 
-            // Convert to SMB path
-            smbResult = "smb://" + slashResult.replace(/\/$/, ''); // Add smb:// prefix, remove trailing slash if present
-            smbResult = smbResult.replace(/\\/g, '/');
+        function convertPath() {
+            const pathInput = document.getElementById("pathInput").value.trim();
 
-            // Windows style backslash path (D:\agc\d\)
-            let winBackslash = pathInput.replace(/\//g, '\\');
-
-            // Windows style slash path (D:/agc/d/)
-            let winSlash = pathInput.replace(/\\/g, '/');
-
-            // Windows double backslash path (D:\\agc\\d\\)
-            let winDoubleBackslash = pathInput.replace(/\//g, '\\\\').replace(/\\/g, '\\\\');
-
-            // Update the results in the UI
-            document.getElementById("singleBackSlash").innerText = singleBackSlash;
-            document.getElementById("doubleBackSlash").innerText = doubleBackSlash;
-            document.getElementById("slashResult").innerText = slashResult;
+            winBackslash = forceWindowsDrive(pathInput);
+            winBackslash = winBackslash.replace(/\//g, '\\');
             document.getElementById("winBackslash").innerText = winBackslash;
+
+            winSlash = forceWindowsDrive(pathInput);
+            winSlash = winSlash.replace(/\\/g, '/');
             document.getElementById("winSlash").innerText = winSlash;
+
+            winDoubleBackslash = forceWindowsDrive(pathInput);
+            winDoubleBackslash = winDoubleBackslash.replace(/\//g, '\\');
+            winDoubleBackslash = winDoubleBackslash.replace(/\\/g, '\\\\');
             document.getElementById("winDoubleBackslash").innerText = winDoubleBackslash;
-            document.getElementById("smbResult").innerText = smbResult;
+
+            slashResult = forceUnixDrive(pathInput);
+            slashResult = slashResult.replace(/\\/g, '/');
+            slashResult = slashResult.replace(/\/\//g, '');
+            document.getElementById("slashResult").innerText = slashResult;
+
+            document.getElementById("smbResult").innerText = "smb://" + slashResult;
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text);
         }
     </script>
+
     <footer>
         2024 | <a href="https://github.com/JackKuo-tw/tools.jackkuo.org">GitHub Repo</a> | jackkuo@jackkuo.org
     </footer>
