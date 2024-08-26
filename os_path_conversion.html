@@ -108,7 +108,7 @@
 
     <div class="container">
         <label for="pathInput">Enter the Path:</label>
-        <input type="text" id="pathInput" placeholder="Enter file or folder path" value="C:/Users/">
+        <input type="text" id="pathInput" placeholder="Enter file or folder path" value="C:/Users/" onchange="convertPath()">
         <!-- <button onclick="convertPath()">Convert Path</button> -->
         <div class="result" id="backSlashResult">
             <p onclick="copyToClipboard('winBackslash')"><strong> <span id="winBackslash">N/A</span></strong> </p> <!--(Windows Backslash)-->
@@ -120,17 +120,10 @@
     </div>
 
     <script>
-        setInterval(detect, 50);
-        var last_input = "";
+        source = document.getElementById('pathInput');
+        source.addEventListener('input', convertPath);
+        convertPath();
 
-        function detect() {
-            const pathInput = document.getElementById("pathInput").value.trim();
-            if (pathInput === last_input) {
-                return;
-            }
-            last_input = pathInput;
-            convertPath(pathInput);
-        }
         function forceWindowsDrive(pathInput) {
             const drivePattern = /^\/([a-zA-Z])\//;
             if (drivePattern.test(pathInput)) {
@@ -151,7 +144,9 @@
             return pathInput;
         }
 
-        function convertPath(pathInput) {
+        function convertPath() {
+            const pathInput = document.getElementById("pathInput").value.trim();
+
             winBackslash = forceWindowsDrive(pathInput);
             winBackslash = winBackslash.replace(/\//g, '\\');
             document.getElementById("winBackslash").innerText = winBackslash;
